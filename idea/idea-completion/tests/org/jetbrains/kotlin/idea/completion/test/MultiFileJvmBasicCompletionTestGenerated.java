@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 @RunWith(JUnit3RunnerWithInners.class)
 public class MultiFileJvmBasicCompletionTestGenerated extends AbstractMultiFileJvmBasicCompletionTest {
     public void testAllFilesPresentInMultifile() throws Exception {
-        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/idea-completion/testData/basic/multifile"), Pattern.compile("^([^\\.]+)$"), TargetBackend.ANY, false);
+        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/idea-completion/testData/basic/multifile"), Pattern.compile("^([^\\.]+)$"), TargetBackend.ANY, true, "ExcludedJavaClass", "NotImportedJavaClass");
     }
 
     @TestMetadata("CallableReferenceNotImported")
@@ -105,12 +105,6 @@ public class MultiFileJvmBasicCompletionTestGenerated extends AbstractMultiFileJ
     @TestMetadata("ExcludedClass")
     public void testExcludedClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/ExcludedClass/");
-        doTest(fileName);
-    }
-
-    @TestMetadata("ExcludedJavaClass")
-    public void testExcludedJavaClass() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/ExcludedJavaClass/");
         doTest(fileName);
     }
 
@@ -306,12 +300,6 @@ public class MultiFileJvmBasicCompletionTestGenerated extends AbstractMultiFileJ
         doTest(fileName);
     }
 
-    @TestMetadata("NotImportedJavaClass")
-    public void testNotImportedJavaClass() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/NotImportedJavaClass/");
-        doTest(fileName);
-    }
-
     @TestMetadata("NotImportedObject")
     public void testNotImportedObject() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/NotImportedObject/");
@@ -424,5 +412,26 @@ public class MultiFileJvmBasicCompletionTestGenerated extends AbstractMultiFileJ
     public void testTypeAliases() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/TypeAliases/");
         doTest(fileName);
+    }
+
+    @TestMetadata("idea/idea-completion/testData/basic/multifile/StaticMembersOfNotImportedClass")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class StaticMembersOfNotImportedClass extends AbstractMultiFileJvmBasicCompletionTest {
+        public void testAllFilesPresentInStaticMembersOfNotImportedClass() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/idea-completion/testData/basic/multifile/StaticMembersOfNotImportedClass"), Pattern.compile("^([^\\.]+)$"), TargetBackend.ANY, true);
+        }
+
+        @TestMetadata("FromKotlin")
+        public void testFromKotlin() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/StaticMembersOfNotImportedClass/FromKotlin/");
+            doTest(fileName);
+        }
+
+        @TestMetadata("FromKotlinObject")
+        public void testFromKotlinObject() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/idea-completion/testData/basic/multifile/StaticMembersOfNotImportedClass/FromKotlinObject/");
+            doTest(fileName);
+        }
     }
 }

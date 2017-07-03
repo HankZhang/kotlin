@@ -1132,7 +1132,15 @@ fun main(args: Array<String>) {
         }
 
         testClass<AbstractMultiFileJvmBasicCompletionTest> {
-            model("basic/multifile", extension = null, recursive = false)
+            val testDataRootFile = File(testDataRoot)
+            val testRootFile = File(testDataRootFile, "basic/multifile")
+            val excludeDirs =
+                    testRootFile.walk()
+                            .filter { it.isDirectory && it.parentFile.listFiles().any { !it.isDirectory } }
+                            .map { it.parentFile.relativeTo(testRootFile).path }
+                            .toList()
+
+            model("basic/multifile", extension = null, recursive = true, excludeDirs = excludeDirs, excludeParentDirs = true)
         }
 
         testClass<AbstractMultiFileSmartCompletionTest> {

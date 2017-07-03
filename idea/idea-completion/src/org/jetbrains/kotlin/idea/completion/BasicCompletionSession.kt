@@ -58,10 +58,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.renderer.render
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.getImportableDescriptor
-import org.jetbrains.kotlin.resolve.descriptorUtil.hasCompanionObject
-import org.jetbrains.kotlin.resolve.descriptorUtil.isExtension
+import org.jetbrains.kotlin.resolve.descriptorUtil.*
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
 import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindExclude
@@ -229,7 +226,6 @@ class BasicCompletionSession(
                     prefix.isEmpty()
                     || callTypeAndReceiver.receiver != null
                     || CodeInsightSettings.getInstance().COMPLETION_CASE_SENSITIVE == CodeInsightSettings.NONE -> {
-                        println("Receiver is ${callTypeAndReceiver.receiver?.text}")
                         addReferenceVariantElements(lookupElementFactory, descriptorKindFilter)
                     }
 
@@ -365,7 +361,6 @@ class BasicCompletionSession(
                 if (qualifier != null) return
                 val receiver = callTypeAndReceiver.receiver as? KtSimpleNameExpression ?: return
 
-
                 val helper = indicesHelper(false)
 
                 val descriptors = mutableListOf<ClassifierDescriptorWithTypeParameters>()
@@ -373,7 +368,6 @@ class BasicCompletionSession(
                 AllClassesCompletion(parameters.withPosition(receiver, receiver.startOffset), helper, PlainPrefixMatcher(receiver.getReferencedName()), resolutionFacade,
                                      { true }, true, configuration.javaClassesNotToBeUsed
                 ).collect({ descriptors += it }, { descriptors.addIfNotNull(it.resolveToDescriptor(resolutionFacade)) })
-
 
                 val foundDescriptors = mutableSetOf<DeclarationDescriptor>()
 
@@ -404,11 +398,17 @@ class BasicCompletionSession(
 
                             val receiverTypes = detectReceiverTypes(newContext, nameExpression, callTypeAndReceiver)
 
-                            val factory = lookupElementFactory.copy(receiverTypes = receiverTypes) {
+                            val factory = lookupElementFactory.copy(receiverTypes = receiverTypes, standardLookupElementsPostProcessor = {
                                 val lookupDescriptor = (it.`object` as? DeclarationLookupObject)
-                                                               ?.descriptor as? CallableMemberDescriptor
-                                                       ?: return@copy it
-                                if (lookupDescriptor.isExtension && lookupDescriptor.extensionReceiverParameter?.importableFqName != desc.fqNameSafe) return@copy it
+                                                               ?.descriptor as? MemberDescriptor ?: return@copy it
+
+                                if (!desc.isAncestorOf(lookupDescriptor, false)) return@copy it
+
+                                if (lookupDescriptor is CallableMemberDescriptor) {
+                                    if (lookupDescriptor.isExtension &&
+                                        lookupDescriptor.extensionReceiverParameter?.importableFqName != desc.fqNameSafe) return@copy it
+                                }
+
                                 val fqNameToImport = lookupDescriptor.containingDeclaration.importableFqName
 
                                 object : LookupElementDecorator<LookupElement>(it) {
@@ -417,6 +417,7 @@ class BasicCompletionSession(
 
                                     override fun handleInsert(context: InsertionContext) {
                                         super.handleInsert(context)
+                                        context.commitDocument()
                                         val file = context.file as? KtFile
                                         if (file != null && fqNameToImport != null) {
                                             ImportInsertHelper.getInstance(project).importDescriptor(file, desc)
@@ -430,7 +431,7 @@ class BasicCompletionSession(
                                             presentation?.appendTailText(" for $name in $packageName", true)
                                     }
                                 }
-                            }
+                            })
 
 
                             rvCollector.collectReferenceVariants(descriptorKindFilter) { (imported, notImportedExtensions) ->
